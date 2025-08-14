@@ -22,6 +22,12 @@ pub async fn version() -> impl Responder {
 	HttpResponse::Ok().json(resp)
 }
 
+#[get("/metrics")]
+pub async fn metrics() -> impl Responder {
+	// Minimal placeholder metrics
+	HttpResponse::Ok().body("rust_certbot_up 1\n")
+}
+
 pub async fn acme_challenge(
 	path: web::Path<String>,
 	cfg: web::Data<AppConfig>,

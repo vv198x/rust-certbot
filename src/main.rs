@@ -38,6 +38,7 @@ async fn main() -> anyhow::Result<()> {
 			.app_data(data_cfg.clone())
 			.service(health)
 			.service(version)
+			.service(rust_certbot::routes::metrics)
 			.route(
 				"/.well-known/acme-challenge/{token}",
 				web::get().to(acme_challenge),
