@@ -1,0 +1,50 @@
+# Rust Certbot Configuration Example
+# =================================
+
+[server]
+port = 8080
+host = "127.0.0.1"
+log_level = "info"
+
+# Domain configurations
+[[domains]]
+name = "example.com"
+webroot = "/var/www/html"
+proxy = "http://localhost:3000"
+
+[[domains]]
+name = "www.example.com"
+webroot = "/var/www/html"
+proxy = "http://localhost:3000"
+
+[[domains]]
+name = "api.example.com"
+webroot = "/var/www/api"
+proxy = "http://localhost:3001"
+
+# ACME Configuration
+[acme]
+provider = "lets-encrypt"
+email = "admin@example.com"
+staging = false
+account_key_path = "/etc/rust-certbot/account.key"
+
+# Certificate storage
+[certificates]
+path = "/etc/rust-certbot/certs"
+backup_path = "/etc/rust-certbot/backups"
+renewal_threshold_days = 30
+
+# Proxy settings
+[proxy]
+enabled = true
+timeout = 30
+max_connections = 100
+keepalive = true
+
+# Logging
+[logging]
+level = "info"
+file = "/var/log/rust-certbot/app.log"
+max_size = "100MB"
+max_files = 5 
