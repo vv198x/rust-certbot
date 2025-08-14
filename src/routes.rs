@@ -28,6 +28,12 @@ pub async fn metrics() -> impl Responder {
 	HttpResponse::Ok().body("rust_certbot_up 1\n")
 }
 
+#[get("/ready")]
+pub async fn ready(cfg: web::Data<AppConfig>) -> impl Responder {
+	let ok = !cfg.domains.is_empty();
+	if ok { HttpResponse::Ok().finish() } else { HttpResponse::ServiceUnavailable().finish() }
+}
+
 pub async fn acme_challenge(
 	path: web::Path<String>,
 	cfg: web::Data<AppConfig>,

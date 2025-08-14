@@ -3,6 +3,7 @@ use anyhow::Context;
 use rust_certbot::config;
 use rust_certbot::routes::{acme_challenge, health, version};
 use rust_certbot::scheduler;
+use rust_certbot::validation;
 use std::env;
 use std::time::Duration;
 use tokio::signal;
@@ -29,16 +30,22 @@ async fn main() -> anyhow::Result<()> {
 		tracing_subscriber::fmt().with_env_filter(env_filter).init();
 	}
 
+	// Validate configuration
+	validation::validate_config(&app_config)?;
+
 	info!("Starting rust-certbot {} on {}", env!("CARGO_PKG_VERSION"), app_config.address());
 
 	let data_cfg = web::Data::new(app_config.clone());
+	let enable_proxy = app_config.proxy.enabled;
+	let proxy_cfg = app_config.clone();
 
 	let server = HttpServer::new(move || {
-		App::new()
+		let mut app = App::new()
 			.app_data(data_cfg.clone())
 			.service(health)
 			.service(version)
 			.service(rust_certbot::routes::metrics)
+			.service(rust_certbot::routes::ready)
 			.route(
 				"/.well-known/acme-challenge/{token}",
 				web::get().to(acme_challenge),
@@ -46,7 +53,11 @@ async fn main() -> anyhow::Result<()> {
 			.route(
 				"/admin/issue",
 				web::post().to(rust_certbot::routes::issue_now),
-			)
+			);
+		if enable_proxy {
+			app = app.service(rust_certbot::proxy::proxy_service(proxy_cfg.clone()));
+		}
+		app
 	})
 	.bind(app_config.address())?
 	.shutdown_timeout(5)
