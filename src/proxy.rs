@@ -6,10 +6,10 @@ use std::time::Duration;
 use tracing::info;
 
 use crate::config::AppConfig;
+use crate::cert_utils;
 
-fn renewal_header_for_domain(_cfg: &AppConfig, _host: &str) -> String {
-	// Placeholder: could read from stored metadata or map
-	"-".to_string()
+fn renewal_header_for_domain(cfg: &AppConfig, host: &str) -> String {
+	cert_utils::renewal_date_header_for_host(cfg, host)
 }
 
 pub fn proxy_service(cfg: AppConfig) -> impl HttpServiceFactory {
