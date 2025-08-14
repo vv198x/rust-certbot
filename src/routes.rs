@@ -22,10 +22,38 @@ pub async fn version() -> impl Responder {
 	HttpResponse::Ok().json(resp)
 }
 
+#[get("/live")]
+pub async fn live() -> impl Responder {
+	HttpResponse::Ok().finish()
+}
+
+#[get("/domains")]
+pub async fn domains(cfg: web::Data<AppConfig>) -> impl Responder {
+	let items: Vec<_> = cfg
+		.domains
+		.iter()
+		.map(|d| {
+			let days_left = crate::cert_utils::days_left_for_host(&cfg, &d.name);
+			serde_json::json!({
+				"name": d.name,
+				"webroot": d.webroot,
+				"proxy": d.proxy,
+				"days_left": days_left,
+			})
+		})
+		.collect();
+	HttpResponse::Ok().json(serde_json::json!({"domains": items}))
+}
+
 #[get("/metrics")]
-pub async fn metrics() -> impl Responder {
-	// Minimal placeholder metrics
-	HttpResponse::Ok().body("rust_certbot_up 1\n")
+pub async fn metrics(cfg: web::Data<AppConfig>) -> impl Responder {
+	let mut body = String::from("rust_certbot_up 1\n");
+	for d in &cfg.domains {
+		if let Some(days) = crate::cert_utils::days_left_for_host(&cfg, &d.name) {
+			body.push_str(&format!("rust_certbot_days_left{{domain=\"{}\"}} {}\n", d.name, days));
+		}
+	}
+	HttpResponse::Ok().body(body)
 }
 
 #[get("/ready")]

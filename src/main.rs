@@ -16,11 +16,24 @@ async fn main() -> anyhow::Result<()> {
 	let app_config = config::AppConfig::load_from_path(&config_path)
 		.with_context(|| format!("Failed to load config from {}", config_path))?;
 
+	// Ensure directories exist
+	std::fs::create_dir_all(&app_config.certificates.path).ok();
+	std::fs::create_dir_all(&app_config.certificates.backup_path).ok();
+	for d in &app_config.domains {
+		let p = std::path::Path::new(&d.webroot).join(".well-known").join("acme-challenge");
+		std::fs::create_dir_all(p).ok();
+	}
+
 	// Logging setup: file if configured, else stdout
 	let level = app_config.logging.level.clone();
 	let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(level));
 	if let Some(ref logfile) = app_config.logging.file {
-		let file_appender = tracing_appender::rolling::never("/", logfile);
+		let (dir, file) = match std::path::Path::new(logfile).parent() {
+			Some(p) if p.to_string_lossy().len() > 0 => (p.to_path_buf(), std::path::Path::new(logfile).file_name().unwrap().to_os_string()),
+			_ => (std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from(".")), std::ffi::OsString::from(logfile)),
+		};
+		let _ = std::fs::create_dir_all(&dir);
+		let file_appender = tracing_appender::rolling::never(dir, file);
 		let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
 		tracing_subscriber::fmt()
 			.with_env_filter(env_filter)
@@ -46,6 +59,8 @@ async fn main() -> anyhow::Result<()> {
 			.service(version)
 			.service(rust_certbot::routes::metrics)
 			.service(rust_certbot::routes::ready)
+			.service(rust_certbot::routes::live)
+			.service(rust_certbot::routes::domains)
 			.route(
 				"/.well-known/acme-challenge/{token}",
 				web::get().to(acme_challenge),

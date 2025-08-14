@@ -91,6 +91,30 @@ fn backup_existing_cert_files(cfg: &AppConfig, domain: &str) -> Result<()> {
 	Ok(())
 }
 
+fn rotate_backups(cfg: &AppConfig, domain: &str) -> Result<()> {
+	use chrono::{Duration, Utc};
+	let base = PathBuf::from(&cfg.certificates.backup_path).join(domain);
+	let entries = match fs::read_dir(&base) { Ok(it) => it, Err(_) => return Ok(()) };
+	let mut items: Vec<_> = entries.filter_map(|e| e.ok()).collect();
+	items.sort_by_key(|e| e.file_name());
+	// Keep last 5 by name (timestamp) and remove older than 30 days
+	let keep = 5usize;
+	let cutoff = Utc::now() - Duration::days(30);
+	for (idx, e) in items.iter().enumerate() {
+		let name = e.file_name().to_string_lossy().to_string();
+		let is_old_index = idx + keep < items.len();
+		let is_old_date = chrono::NaiveDateTime::parse_from_str(&(name.clone()+"0000"), "%Y%m%d%H%M%S%f")
+			.ok()
+			.and_then(|dt| chrono::DateTime::<Utc>::from_naive_utc_and_offset(dt, Utc).into())
+			.map(|dt: chrono::DateTime<Utc>| dt < cutoff)
+			.unwrap_or(false);
+		if is_old_index || is_old_date {
+			let _ = fs::remove_dir_all(e.path());
+		}
+	}
+	Ok(())
+}
+
 pub fn issue_http01_for_domain(cfg: &AppConfig, domain_name: &str) -> Result<()> {
 	let domain_cfg = cfg
 		.domains
@@ -132,6 +156,7 @@ pub fn issue_http01_for_domain(cfg: &AppConfig, domain_name: &str) -> Result<()>
 
 	// Backup current certs if present
 	backup_existing_cert_files(cfg, &domain_cfg.name)?;
+	rotate_backups(cfg, &domain_cfg.name).ok();
 
 	let domain_dir = PathBuf::from(&cfg.certificates.path).join(&domain_cfg.name);
 	ensure_dir(&domain_dir)?;
