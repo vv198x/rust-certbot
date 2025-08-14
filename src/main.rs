@@ -31,6 +31,10 @@ async fn main() -> anyhow::Result<()> {
 				"/.well-known/acme-challenge/{token}",
 				web::get().to(acme_challenge),
 			)
+			.route(
+				"/admin/issue",
+				web::post().to(rust_certbot::routes::issue_now),
+			)
 	})
 	.bind(app_config.address())?
 	.shutdown_timeout(5)
