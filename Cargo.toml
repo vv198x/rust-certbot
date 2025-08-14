@@ -33,6 +33,7 @@ clap = { version = "4.4", features = ["derive"] }
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+tracing-appender = "0.2"
 
 # SSL/TLS certificates
 rustls = "0.21"

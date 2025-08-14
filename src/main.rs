@@ -6,18 +6,29 @@ use rust_certbot::scheduler;
 use std::env;
 use std::time::Duration;
 use tokio::signal;
-use tracing::{error, info};
+use tracing::{error, info, Level};
 use tracing_subscriber::EnvFilter;
 
 #[actix_web::main]
 async fn main() -> anyhow::Result<()> {
-	// Logging / tracing setup
-	let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
-	tracing_subscriber::fmt().with_env_filter(env_filter).init();
-
 	let config_path = env::var("RUST_CERTBOT_CONFIG").unwrap_or_else(|_| "config.toml".to_string());
 	let app_config = config::AppConfig::load_from_path(&config_path)
 		.with_context(|| format!("Failed to load config from {}", config_path))?;
+
+	// Logging setup: file if configured, else stdout
+	let level = app_config.logging.level.clone();
+	let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new(level));
+	if let Some(ref logfile) = app_config.logging.file {
+		let file_appender = tracing_appender::rolling::never("/", logfile);
+		let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
+		tracing_subscriber::fmt()
+			.with_env_filter(env_filter)
+			.with_writer(non_blocking)
+			.init();
+	} else {
+		tracing_subscriber::fmt().with_env_filter(env_filter).init();
+	}
+
 	info!("Starting rust-certbot {} on {}", env!("CARGO_PKG_VERSION"), app_config.address());
 
 	let data_cfg = web::Data::new(app_config.clone());
