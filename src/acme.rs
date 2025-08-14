@@ -57,6 +57,40 @@ fn write_atomically(path: &Path, content: &[u8], mode: Option<u32>) -> Result<()
 	Ok(())
 }
 
+fn timestamp_dir_name() -> String {
+	chrono::Utc::now().format("%Y%m%d%H%M%S").to_string()
+}
+
+fn backup_existing_cert_files(cfg: &AppConfig, domain: &str) -> Result<()> {
+	let domain_dir = PathBuf::from(&cfg.certificates.path).join(domain);
+	let fullchain_path = domain_dir.join("fullchain.pem");
+	let chain_path = domain_dir.join("chain.pem");
+	let key_path = domain_dir.join("privkey.pem");
+
+	let backup_base = PathBuf::from(&cfg.certificates.backup_path)
+		.join(domain)
+		.join(timestamp_dir_name());
+	ensure_dir(&backup_base)?;
+
+	let mut copied_any = false;
+	for (src, name) in [
+		(fullchain_path.as_path(), "fullchain.pem"),
+		(chain_path.as_path(), "chain.pem"),
+		(key_path.as_path(), "privkey.pem"),
+	] {
+		if src.exists() {
+			let dst = backup_base.join(name);
+			fs::copy(src, &dst)
+				.with_context(|| format!("Failed to backup {} to {}", src.display(), dst.display()))?;
+			copied_any = true;
+		}
+	}
+	if copied_any {
+		info!("Created backup for {} at {}", domain, backup_base.display());
+	}
+	Ok(())
+}
+
 pub fn issue_http01_for_domain(cfg: &AppConfig, domain_name: &str) -> Result<()> {
 	let domain_cfg = cfg
 		.domains
@@ -95,6 +129,9 @@ pub fn issue_http01_for_domain(cfg: &AppConfig, domain_name: &str) -> Result<()>
 	let pkey_pri = create_p384_key();
 	let ord_cert = ord_csr.finalize_pkey(pkey_pri, 5000)?;
 	let cert = ord_cert.download_and_save_cert()?;
+
+	// Backup current certs if present
+	backup_existing_cert_files(cfg, &domain_cfg.name)?;
 
 	let domain_dir = PathBuf::from(&cfg.certificates.path).join(&domain_cfg.name);
 	ensure_dir(&domain_dir)?;
