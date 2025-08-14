@@ -26,6 +26,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+/var/log/rust-certbot/
 
 # Environment variables
 .env
@@ -55,3 +56,19 @@ coverage/
 
 # Profiling data
 *.prof 
+
+# Rust
+/target
+
+# Logs
+*.log
+/var/log/rust-certbot/
+
+# Local certs and backups
+/cert/
+/backups/
+/web/letsencrypt/
+
+# Docker
+/docker/
+.env 

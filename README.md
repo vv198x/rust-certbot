@@ -180,3 +180,19 @@ MIT License - одна из самых разрешительных лиценз
 - [Документация](https://docs.rs/rust-certbot)
 - [Issues](https://github.com/vv198x/rust-certbot/issues)
 - [Discussions](https://github.com/vv198x/rust-certbot/discussions)
+
+## 🐳 Docker Quickstart
+
+```bash
+# Build and run
+docker compose up --build -d
+
+# Test health and version
+curl -i http://localhost:8080/health
+curl -s http://localhost:8080/version | jq
+
+# ACME HTTP-01 challenge file serving
+mkdir -p web/.well-known/acme-challenge
+echo test > web/.well-known/acme-challenge/xyz
+curl -i http://localhost:8080/.well-known/acme-challenge/xyz
+```
