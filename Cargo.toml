@@ -13,13 +13,14 @@ categories = ["web-programming", "command-line-utilities", "asynchronous", "netw
 # Web framework
 actix-web = "4.4"
 actix-rt = "2.9"
+actix-files = "0.6"
 
 # Async runtime and utilities
 tokio = { version = "1.35", features = ["full"] }
 futures = "0.3"
 
 # HTTP client for ACME challenges
-reqwest = { version = "0.11", features = ["json", "rustls-tls"] }
+reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
 
 # Configuration
 toml = "0.8"
@@ -37,6 +38,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 rustls = "0.21"
 rustls-pemfile = "1.0"
 x509 = "0.2"
+openssl = { version = "0.10", features = ["vendored"] }
 
 # ACME protocol
 acme-lib = "0.8"
@@ -46,12 +48,12 @@ chrono = { version = "0.4", features = ["serde"] }
 tokio-cron-scheduler = "0.9"
 
 # Proxy and networking
-hyper = { version = "1.0", features = ["full"] }
-tower = "0.4"
-tower-http = { version = "0.5", features = ["cors", "trace"] }
+# hyper/tower are currently unused; keep commented for future proxy work
+# hyper = { version = "1.0", features = ["full"] }
+# tower = "0.4"
+# tower-http = { version = "0.5", features = ["cors", "trace"] }
 
 # File system operations
-tokio-fs = "0.1"
 walkdir = "2.4"
 
 # Error handling
@@ -64,8 +66,6 @@ uuid = { version = "1.6", features = ["v4", "serde"] }
 # Environment variables
 dotenv = "0.15"
 
-# Health checks
-health = "0.2"
 
 [dev-dependencies]
 # Testing

@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  app:
+    build: .
+    image: rust-certbot:local
+    container_name: rust-certbot-app
+    ports:
+      - "8080:8080"
+    environment:
+      - RUST_LOG=info
+      - RUST_CERTBOT_CONFIG=/app/config.toml
+    volumes:
+      - ./web:/app/web
+      - ./cert:/app/cert
+      - ./backups:/app/backups
+      - ./config.toml:/app/config.toml:ro
+    restart: unless-stopped
