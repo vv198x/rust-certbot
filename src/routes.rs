@@ -58,7 +58,21 @@ pub async fn metrics(cfg: web::Data<AppConfig>) -> impl Responder {
 
 #[get("/ready")]
 pub async fn ready(cfg: web::Data<AppConfig>) -> impl Responder {
-	let ok = !cfg.domains.is_empty();
+	let mut ok = true;
+	// Check webroots exist
+	for d in &cfg.domains {
+		let p = std::path::Path::new(&d.webroot);
+		if !p.exists() {
+			ok = false;
+			break;
+		}
+	}
+	// Check cert and backup paths exist or can be created
+	if ok {
+		let certs_ok = std::fs::create_dir_all(&cfg.certificates.path).is_ok();
+		let backups_ok = std::fs::create_dir_all(&cfg.certificates.backup_path).is_ok();
+		ok = certs_ok && backups_ok;
+	}
 	if ok { HttpResponse::Ok().finish() } else { HttpResponse::ServiceUnavailable().finish() }
 }
 
