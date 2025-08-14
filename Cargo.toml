@@ -1,0 +1,16 @@
+[package]
+name = "rust-certbot"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+authors = ["Your Name <your.email@example.com>"]
+description = "A Rust implementation of Certbot for automated SSL certificate management"
+repository = "https://github.com/vv198x/rust-certbot"
+keywords = ["ssl", "certificate", "lets-encrypt", "acme", "certbot"]
+categories = ["web-programming", "command-line-utilities"]
+
+[dependencies]
+# Core dependencies will be added as the project develops
+
+[dev-dependencies]
+# Test dependencies will be added as needed
